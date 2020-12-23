@@ -34,6 +34,8 @@ type FileLogConfig struct {
 	MaxDays int `toml:"max-days" json:"max-days"`
 	// Maximum number of old log files to retain.
 	MaxBackups int `toml:"max-backups" json:"max-backups"`
+
+	Async bool `toml:"async" json:"async"`
 }
 
 // Config serializes log related config in toml/json.

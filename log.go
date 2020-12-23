@@ -37,12 +37,19 @@ func init() {
 // InitLogger initializes a zap logger.
 func InitLogger(cfg *Config, opts ...zap.Option) (*zap.Logger, *ZapProperties, error) {
 	var output zapcore.WriteSyncer
+	var err error
 	if len(cfg.File.Filename) > 0 {
 		lg, err := initFileLog(&cfg.File)
 		if err != nil {
 			return nil, nil, err
 		}
 		output = zapcore.AddSync(lg)
+	} else if cfg.File.Async && len(cfg.File.Filename) > 0 {
+		output, err = initFileLogAsync(&cfg.File)
+		if err != nil {
+			return nil, nil, err
+		}
+
 	} else {
 		stdOut, _, err := zap.Open([]string{"stdout"}...)
 		if err != nil {
@@ -51,6 +58,29 @@ func InitLogger(cfg *Config, opts ...zap.Option) (*zap.Logger, *ZapProperties, e
 		output = stdOut
 	}
 	return InitLoggerWithWriteSyncer(cfg, output, opts...)
+}
+
+// initFileLog initializes file based logging options.
+func initFileLogAsync(cfg *FileLogConfig) (*FileWriteAsyncer, error) {
+	if st, err := os.Stat(cfg.Filename); err == nil {
+		if st.IsDir() {
+			return nil, errors.New("can't use directory as log file name")
+		}
+	}
+	if cfg.MaxSize == 0 {
+		cfg.MaxSize = defaultLogMaxSize
+	}
+
+	// use lumberjack to logrotate
+	lg := &lumberjack.Logger{
+		Filename:   cfg.Filename,
+		MaxSize:    cfg.MaxSize,
+		MaxBackups: cfg.MaxBackups,
+		MaxAge:     cfg.MaxDays,
+		LocalTime:  true,
+	}
+
+	return NewFileWriteAsyncer(lg), nil
 }
 
 // InitLoggerWithWriteSyncer initializes a zap logger with specified  write syncer.
