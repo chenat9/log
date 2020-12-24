@@ -138,13 +138,13 @@ func newStdLogger() (*zap.Logger, *ZapProperties) {
 
 // GL returns the global Logger, which can be reconfigured with ReplaceGlobals.
 // It's safe for concurrent use.
-func GL() *zap.Logger {
+func L() *zap.Logger {
 	return _globalL.Load().(*zap.Logger)
 }
 
 // GS returns the global SugaredLogger, which can be reconfigured with
 // ReplaceGlobals. It's safe for concurrent use.
-func GS() *zap.SugaredLogger {
+func S() *zap.SugaredLogger {
 	return _globalS.Load().(*zap.SugaredLogger)
 }
 
@@ -179,7 +179,7 @@ func ReplaceReqLoggers(rlogger *zap.Logger, rprops *ZapProperties) {
 
 // Sync flushes any buffered log entries.
 func Sync() error {
-	err := GL().Sync()
+	err := L().Sync()
 	if err != nil {
 		return err
 	}
@@ -187,7 +187,7 @@ func Sync() error {
 	if err != nil {
 		return err
 	}
-	err = GS().Sync()
+	err = S().Sync()
 	if err != nil {
 		return err
 	}
