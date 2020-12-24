@@ -24,6 +24,7 @@ import (
 )
 
 var _globalL, _globalP, _globalS atomic.Value
+var _reqL, _reqP, _reqS atomic.Value
 
 func init() {
 	l, p := newStdLogger()
@@ -32,6 +33,13 @@ func init() {
 
 	s := _globalL.Load().(*zap.Logger).Sugar()
 	_globalS.Store(s)
+
+	rl, rp := newStdLogger()
+	_reqL.Store(rl)
+	_reqP.Store(rp)
+
+	rs := _reqL.Load().(*zap.Logger).Sugar()
+	_reqS.Store(rs)
 }
 
 // InitLogger initializes a zap logger.
@@ -128,16 +136,28 @@ func newStdLogger() (*zap.Logger, *ZapProperties) {
 	return lg, r
 }
 
-// L returns the global Logger, which can be reconfigured with ReplaceGlobals.
+// GL returns the global Logger, which can be reconfigured with ReplaceGlobals.
 // It's safe for concurrent use.
-func L() *zap.Logger {
+func GL() *zap.Logger {
 	return _globalL.Load().(*zap.Logger)
 }
 
-// S returns the global SugaredLogger, which can be reconfigured with
+// GS returns the global SugaredLogger, which can be reconfigured with
 // ReplaceGlobals. It's safe for concurrent use.
-func S() *zap.SugaredLogger {
+func GS() *zap.SugaredLogger {
 	return _globalS.Load().(*zap.SugaredLogger)
+}
+
+// RL returns the global Logger, which can be reconfigured with ReplaceGlobals.
+// It's safe for concurrent use.
+func RL() *zap.Logger {
+	return _reqL.Load().(*zap.Logger)
+}
+
+// RS returns the global SugaredLogger, which can be reconfigured with
+// ReplaceGlobals. It's safe for concurrent use.
+func RS() *zap.SugaredLogger {
+	return _reqS.Load().(*zap.SugaredLogger)
 }
 
 // ReplaceGlobals replaces the global Logger and SugaredLogger.
@@ -148,11 +168,28 @@ func ReplaceGlobals(logger *zap.Logger, props *ZapProperties) {
 	_globalP.Store(props)
 }
 
+// ReplaceReqLoggers replaces the global Logger and SugaredLogger.
+// It's safe for concurrent use.
+func ReplaceReqLoggers(rlogger *zap.Logger, rprops *ZapProperties) {
+
+	_reqL.Store(rlogger)
+	_reqS.Store(rlogger.Sugar())
+	_reqP.Store(rprops)
+}
+
 // Sync flushes any buffered log entries.
 func Sync() error {
-	err := L().Sync()
+	err := GL().Sync()
 	if err != nil {
 		return err
 	}
-	return S().Sync()
+	err = RL().Sync()
+	if err != nil {
+		return err
+	}
+	err = GS().Sync()
+	if err != nil {
+		return err
+	}
+	return RS().Sync()
 }
