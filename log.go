@@ -46,7 +46,7 @@ func init() {
 func InitLogger(cfg *Config, opts ...zap.Option) (*zap.Logger, *ZapProperties, error) {
 	var output zapcore.WriteSyncer
 	var err error
-	if len(cfg.File.Filename) > 0 {
+	if len(cfg.File.Filename) > 0 && cfg.File.Async == false {
 		lg, err := initFileLog(&cfg.File)
 		if err != nil {
 			return nil, nil, err
